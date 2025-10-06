@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Font Editor for Space Type Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.dom.min.js"></script>
+  <script src="https://unpkg.com/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; overflow: hidden; }
+    .code-block { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; tab-size: 2; background:#1a202c; border-color:#4a5568; height:150px; overflow-y:auto; }
+    #sketch-container canvas { max-width:100%; height:auto !important; border-radius:.5rem; }
+    .p5Canvas { border-radius:.5rem; }
+    #controls-container { position:absolute; top:1rem; left:1rem; background:rgba(17,24,39,.8); padding:1rem; border-radius:.5rem; border:1px solid #4a5568; z-index:10; max-height:calc(100% - 2rem); overflow-y:auto; display:flex; flex-direction:column; gap:.5rem; color:#fff; font-size:.75rem; }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+  <div class="flex h-screen w-screen">
+    <div class="w-1/2 h-full flex flex-col p-4 relative">
+      <div class="flex items-center justify-between mb-2">
+        <h1 class="text-xl font-bold">Live Preview</h1>
+        <input type="text" id="textfield" value="EDIT ME 123" class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+      </div>
+      <div id="sketch-container" class="relative flex-grow bg-gray-800 rounded-lg border border-gray-700">
+        <div id="controls-container"></div>
+      </div>
+      <button id="update-all-button" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition-colors duration-200">
+        Apply All Function Changes to Main Sketch
+      </button>
+    </div>
+    <div class="w-1/2 h-full flex flex-col p-4 border-l border-gray-700">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold mb-2">Individual Font Function Editors</h2>
+        <button id="preview-selected" class="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded transition-colors">Preview Selected Editor</button>
+      </div>
+      <div id="function-editors-container" class="flex-grow overflow-y-auto space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    // Store the p5.js instance (also bridged to window in-frame)
+    let p5Instance;
+
+    // ---------- Letter Function Storage (each as a string) ----------
+    // IMPORTANT: All p5 calls are prefixed with p5Instance.
+    const letterFunctions = {
+      keyboardEngine: `
+function keyboardEngine() {
+  c1 = inpText.charAt(letter_select);
+  if (c1 == 'A' || c1 == 'a') { letter_A(); }
+  else if (c1 == 'B' || c1 == 'b') { letter_B(); }
+  else if (c1 == 'C' || c1 == 'c') { letter_C(); }
+  else if (c1 == 'D' || c1 == 'd') { letter_D(); }
+  else if (c1 == 'E' || c1 == 'e') { letter_E(); }
+  else if (c1 == 'F' || c1 == 'f') { letter_F(); }
+  else if (c1 == 'G' || c1 == 'g') { letter_G(); }
+  else if (c1 == 'H' || c1 == 'h') { letter_H(); }
+  else if (c1 == 'I' || c1 == 'i') { letter_I(); }
+  else if (c1 == 'J' || c1 == 'j') { letter_J(); }
+  else if (c1 == 'K' || c1 == 'k') { letter_K(); }
+  else if (c1 == 'L' || c1 == 'l') { letter_L(); }
+  else if (c1 == 'M' || c1 == 'm') { letter_M(); }
+  else if (c1 == 'N' || c1 == 'n') { letter_N(); }
+  else if (c1 == 'O' || c1 == 'o') { letter_O(); }
+  else if (c1 == 'P' || c1 == 'p') { letter_P(); }
+  else if (c1 == 'Q' || c1 == 'q') { letter_Q(); }
+  else if (c1 == 'R' || c1 == 'r') { letter_R(); }
+  else if (c1 == 'S' || c1 == 's') { letter_S(); }
+  else if (c1 == 'T' || c1 == 't') { letter_T(); }
+  else if (c1 == 'U' || c1 == 'u') { letter_U(); }
+  else if (c1 == 'V' || c1 == 'v') { letter_V(); }
+  else if (c1 == 'W' || c1 == 'w') { letter_W(); }
+  else if (c1 == 'X' || c1 == 'x') { letter_X(); }
+  else if (c1 == 'Y' || c1 == 'y') { letter_Y(); }
+  else if (c1 == 'Z' || c1 == 'z') { letter_Z(); }
+  else if (c1 == '_') { letter_underscore(); }
+  else if (c1 == '-') { letter_dash(); }
+  else if (c1 == '?') { letter_question(); }
+  else if (c1 == '.') { letter_period(); }
+  else if (c1 == '!') { letter_exclaim(); }
+  else if (c1 == ' ') { letter_space(); }
+  else if (c1 == ':') { letter_colon(); }
+  else if (c1 == ';') { letter_semicolon(); }
+  else if (c1 == ',') { letter_comma(); }
+  else if (c1 == '/') { letter_slash(); }
+  else if (c1 == '&') { letter_amp(); }
+  else if (c1 == '1') { one(); }
+  else if (c1 == '2') { two(); }
+  else if (c1 == '3') { three(); }
+  else if (c1 == '4') { four(); }
+  else if (c1 == '5') { five(); }
+  else if (c1 == '6') { six(); }
+  else if (c1 == '7') { seven(); }
+  else if (c1 == '8') { eight(); }
+  else if (c1 == '9') { nine(); }
+  else if (c1 == '0') { zero(); }
+  else if (c1 == '"') { double_quote(); }
+  else if (c1 == "'") { single_quote(); }
+  else if (c1 == '#') { hash(); }
+  else if (c1 == '$') { cash(); }
+  else if (c1 == '%') { percentage(); }
+  else if (c1 == '=') { equal(); }
+  else if (c1 == '+') { plus(); }
+  else if (c1 == '*') { asterisk(); }
+  else if (c1 == '@') { at(); }
+}`,
+      letter_A: `function letter_A () {
+  p5Instance.push();
+  p5Instance.beginShape();
+    p5Instance.vertex(0,typeY);
+    p5Instance.vertex(0,typeY-SA);
+    p5Instance.vertex(typeX/2-typeStroke/4,0);
+    p5Instance.vertex(typeX/2+typeStroke/4,0);
+    p5Instance.vertex(typeX,typeY-SA);
+    p5Instance.vertex(typeX,typeY);
+  p5Instance.endShape();
+  let ang = p5Instance.atan((typeX/2)/(typeY));
+  let angX = p5Instance.tan(ang)*(typeY/3);
+  p5Instance.line(angX-SA/2, 21*typeY/28, typeX-angX+SA/2, 21*typeY/28);
+  p5Instance.pop();
+}`,
+      letter_B: `function letter_B () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(typeX/2,0);
+    p5Instance.bezierVertex(3*typeX/4,0, 26*typeX/28,2*typeY/28, 26*typeX/28,6*typeY/28);
+    p5Instance.vertex(26*typeX/28,7*typeY/28);
+    p5Instance.bezierVertex(26*typeX/28,11*typeY/28, 22*typeX/28,13*typeY/28, typeX/2,13*typeY/28);
+    p5Instance.vertex(0,13*typeY/28);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(0,13*typeY/28);
+    p5Instance.vertex(typeX/2,13*typeY/28);
+    p5Instance.bezierVertex(3*typeX/4,13*typeY/28, typeX,15*typeY/28, typeX,20*typeY/28);
+    p5Instance.vertex(typeX,3*typeY/4);
+    p5Instance.bezierVertex(typeX,7*typeY/8, 5*typeX/6,typeY, typeX/2, typeY);
+    p5Instance.vertex(0,typeY);
+    p5Instance.vertex(0,0);
+  p5Instance.endShape();
+}`,
+      letter_C: `function letter_C () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX,3*typeY/4);
+    p5Instance.bezierVertex(typeX,7*typeY/8, 5*typeX/6,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/6,typeY, 0,5*typeY/6, 0,2*typeY/3);
+    p5Instance.vertex(0,typeY/3);
+    p5Instance.bezierVertex(0,typeY/6, typeX/6,0, typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,0, typeX,typeY/8, typeX,typeY/4);
+  p5Instance.endShape();
+}`,
+      letter_D: `function letter_D () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,0, typeX,typeY/6, typeX,typeY/3);
+    p5Instance.vertex(typeX,2*typeY/3);
+    p5Instance.bezierVertex(typeX,5*typeY/6, 5*typeX/6,typeY, typeX/2,typeY);
+    p5Instance.vertex(0,typeY);
+    p5Instance.vertex(0,0);
+  p5Instance.endShape();
+}`,
+      letter_E: `function letter_E () {
+  p5Instance.line(0,0, typeX,0);
+  p5Instance.line(0,0, 0,typeY);
+  p5Instance.line(0,typeY, typeX,typeY);
+  p5Instance.line(0,15*typeY/28, 7*typeX/8,15*typeY/28);
+}`,
+      letter_F: `function letter_F () {
+  p5Instance.line(0,0, typeX,0);
+  p5Instance.line(0,0, 0,typeY);
+  p5Instance.line(0,15*typeY/28, 7*typeX/8,15*typeY/28);
+}`,
+      letter_G: `function letter_G () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX,3*typeY/4);
+    p5Instance.bezierVertex(typeX,7*typeY/8, 5*typeX/6,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/6,typeY, 0,5*typeY/6, 0,2*typeY/3);
+    p5Instance.vertex(0,typeY/3);
+    p5Instance.bezierVertex(0,typeY/6, typeX/6,0, typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,0, typeX,typeY/8, typeX,typeY/4);
+  p5Instance.endShape();
+  p5Instance.line(typeX,typeY, typeX,15*typeY/28);
+  p5Instance.line(5*typeX/8,15*typeY/28, typeX,15*typeY/28);
+}`,
+      letter_H: `function letter_H () {
+  p5Instance.line(0,0, 0,typeY);
+  p5Instance.line(typeX,0, typeX,typeY);
+  p5Instance.line(0,typeY/2, typeX,typeY/2);
+}`,
+      letter_I: `function letter_I () {
+  p5Instance.line(0,0, typeX,0);
+  p5Instance.line(0,typeY, typeX,typeY);
+  p5Instance.line(typeX/2,0, typeX/2,typeY);
+}`,
+      letter_J: `function letter_J () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/2,0);
+    p5Instance.vertex(typeX,0);
+    p5Instance.vertex(typeX,2*typeY/3);
+    p5Instance.bezierVertex(typeX,5*typeY/6, 5*typeX/6,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/6,typeY, 0,5*typeY/6, 0,2*typeY/3);
+  p5Instance.endShape();
+}`,
+      letter_K: `function letter_K () {
+  p5Instance.line(0, 0, 0, typeY);
+  p5Instance.beginShape();
+    p5Instance.vertex(0, 2*typeY/3);
+    p5Instance.vertex(27*typeX/28, SA);
+    p5Instance.vertex(27*typeX/28, 0);
+  p5Instance.endShape();
+  let ang = p5Instance.atan((2*typeY/3)/(typeX));
+  let angX = (13/28*typeY)/p5Instance.tan(ang);
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX-angX, 13/28*typeY);
+    p5Instance.vertex(typeX, typeY-SA);
+    p5Instance.vertex(typeX, typeY);
+  p5Instance.endShape();
+}`,
+      letter_L: `function letter_L () {
+  p5Instance.line(0,0, 0,typeY);
+  p5Instance.line(0,typeY, typeX,typeY);
+}`,
+      letter_M: `function letter_M () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,typeY);
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(typeX/2,22*typeY/28-SA);
+    p5Instance.vertex(typeX,0);
+    p5Instance.vertex(typeX,typeY);
+  p5Instance.endShape();
+}`,
+      letter_N: `function letter_N () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,typeY);
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(typeX,typeY);
+    p5Instance.vertex(typeX,0);
+  p5Instance.endShape();
+}`,
+      letter_O: `function letter_O () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX, typeY/3);
+    p5Instance.vertex(typeX,2*typeY/3);
+    p5Instance.bezierVertex(typeX,5*typeY/6, 5*typeX/6,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/6,typeY, 0,5*typeY/6, 0,2*typeY/3);
+    p5Instance.vertex(0,typeY/3);
+    p5Instance.bezierVertex(0,typeY/6, typeX/6,0, typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,0, typeX,typeY/6, typeX,typeY/3);
+  p5Instance.endShape();
+}`,
+      letter_P: `function letter_P () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,typeY);
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,0, typeX,typeY/8, typeX,typeY/4);
+    p5Instance.vertex(typeX,8*typeY/28);
+    p5Instance.bezierVertex(typeX,8*typeY/28 + typeY/8, 5*typeX/6,15*typeY/28, typeX/2,15*typeY/28);
+    p5Instance.vertex(0,15*typeY/28);
+  p5Instance.endShape();
+}`,
+      letter_Q: `function letter_Q () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX, typeY/3);
+    p5Instance.vertex(typeX,2*typeY/3);
+    p5Instance.bezierVertex(typeX,5*typeY/6, 5*typeX/6,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/6,typeY, 0,5*typeY/6, 0,2*typeY/3);
+    p5Instance.vertex(0,typeY/3);
+    p5Instance.bezierVertex(0,typeY/6, typeX/6,0, typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,0, typeX,typeY/6, typeX,typeY/3);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/2,15*typeY/28);
+    p5Instance.vertex(typeX,typeY-SA);
+    p5Instance.vertex(typeX,typeY);
+  p5Instance.endShape();
+}`,
+      letter_R: `function letter_R () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,typeY);
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,0, typeX,typeY/8, typeX,typeY/4);
+    p5Instance.vertex(typeX,8*typeY/28);
+    p5Instance.bezierVertex(typeX,8*typeY/28 + typeY/8, 5*typeX/6,15*typeY/28, typeX/2,15*typeY/28);
+    p5Instance.vertex(0,15*typeY/28);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/2,15*typeY/28);
+    p5Instance.vertex(typeX-SA,typeY-SA);
+    p5Instance.vertex(typeX-SA,typeY);
+  p5Instance.endShape();
+}`,
+      letter_S: `function letter_S () {
+  p5Instance.beginShape();
+    p5Instance.vertex(27*typeX/28,typeY/4);
+    p5Instance.vertex(27*typeX/28,13*typeY/56);
+    p5Instance.bezierVertex(27*typeX/28,4*typeY/28, 7*typeX/8,0, typeX/2,0);
+    p5Instance.bezierVertex(typeX/4,0, typeX/28,2*typeY/28, typeX/28,11*typeY/56);
+    p5Instance.vertex(typeX/28,6*typeY/28);
+    p5Instance.bezierVertex(typeX/28,17*typeY/56, typeX/8,21*typeY/56, typeX/3,12*typeY/28);
+    p5Instance.vertex(20*typeX/28,29*typeY/56);
+    p5Instance.bezierVertex(26*typeX/28,16*typeY/28, typeX,18*typeY/28, typeX,41*typeY/56);
+    p5Instance.vertex(typeX,3*typeY/4);
+    p5Instance.bezierVertex(typeX,26*typeY/28, 22*typeX/28,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/4,typeY, 0,53*typeY/56, 0,3*typeY/4);
+    p5Instance.vertex(0,41*typeY/56);
+  p5Instance.endShape();
+}`,
+      letter_T: `function letter_T () {
+  p5Instance.line(0,0, typeX,0);
+  p5Instance.line(typeX/2,0, typeX/2,typeY);
+}`,
+      letter_U: `function letter_U () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX,0);
+    p5Instance.vertex(typeX,2*typeY/3);
+    p5Instance.bezierVertex(typeX,5*typeY/6, 5*typeX/6,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/6,typeY, 0,5*typeY/6, 0,2*typeY/3);
+    p5Instance.vertex(0,0);
+  p5Instance.endShape();
+}`,
+      letter_V: `function letter_V () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(0,SA);
+    p5Instance.vertex(typeX/2-SA/2,typeY);
+    p5Instance.vertex(typeX/2+SA/2,typeY);
+    p5Instance.vertex(typeX,SA);
+    p5Instance.vertex(typeX,0);
+  p5Instance.endShape();
+}`,
+      letter_W: `function letter_W () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(0,SA);
+    p5Instance.vertex(typeX/4-SA/2,typeY);
+    p5Instance.vertex(typeX/4+SA/2,typeY);
+    p5Instance.vertex(typeX/2-SA/2,8*typeY/28);
+    p5Instance.vertex(typeX/2+SA/2,8*typeY/28);
+    p5Instance.vertex(3*typeX/4-SA/2,typeY);
+    p5Instance.vertex(3*typeX/4+SA/2,typeY);
+    p5Instance.vertex(typeX,SA);
+    p5Instance.vertex(typeX,0);
+  p5Instance.endShape();
+}`,
+      letter_X: `function letter_X () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(0,SA);
+    p5Instance.vertex(typeX,typeY-SA);
+    p5Instance.vertex(typeX,typeY);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX,0);
+    p5Instance.vertex(typeX,SA);
+    p5Instance.vertex(0,typeY-SA);
+    p5Instance.vertex(0,typeY);
+  p5Instance.endShape();
+}`,
+      letter_Y: `function letter_Y () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(0,SA);
+    p5Instance.vertex(typeX/2,2*typeY/3);
+    p5Instance.vertex(typeX,SA);
+    p5Instance.vertex(typeX,0);
+  p5Instance.endShape();
+  p5Instance.line(typeX/2,2*typeY/3, typeX/2,typeY);
+}`,
+      letter_Z: `function letter_Z () {
+  p5Instance.line(0,0, typeX,0);
+  p5Instance.line(0,typeY, typeX,typeY);
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX,0);
+    p5Instance.vertex(typeX,SA);
+    p5Instance.vertex(0,typeY-SA);
+    p5Instance.vertex(0,typeY);
+  p5Instance.endShape();
+}`,
+      // digits
+      one: `function one () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/8,6/28*typeY);
+    p5Instance.vertex(typeX/2,0);
+    p5Instance.vertex(typeX/2,typeY);
+  p5Instance.endShape();
+  p5Instance.line(0,typeY,typeX,typeY);
+}`,
+      two: `function two () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,typeY/4);
+    p5Instance.bezierVertex(0,typeY/8, typeX/6,0, typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,SA, typeX,typeY/8, typeX,typeY/4);
+    p5Instance.bezierVertex(typeX,5*typeY/8, 0,2*typeY/3, 0,typeY);
+    p5Instance.vertex(typeX,typeY);
+  p5Instance.endShape();
+}`,
+      three: `function three () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(typeX,0);
+    p5Instance.vertex(typeX*12/28,typeY*10/28);
+    p5Instance.vertex(typeX*12/28,typeY*10/28);
+    p5Instance.bezierVertex(24/28*typeX,10/28*typeY, typeX,15/28*typeY, typeX,19/28*typeY);
+    p5Instance.vertex(typeX,3/4*typeY);
+    p5Instance.bezierVertex(typeX,24/28*typeY, 24/28*typeX,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(4/28*typeX,typeY, 0,24/28*typeY, 0,3/4*typeY);
+  p5Instance.endShape();
+}`,
+      four: `function four () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/3,0);
+    p5Instance.vertex(typeX/3,SA);
+    p5Instance.vertex(0,2*typeY/3);
+    p5Instance.vertex(typeX,2*typeY/3);
+  p5Instance.endShape();
+  p5Instance.line(21/28*typeX,0, 21/28*typeX,typeY);
+}`,
+      five: `function five () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX*7/8,0);
+    p5Instance.vertex(typeX*2/28,0);
+    p5Instance.vertex(typeX*2/28,11/28*typeY);
+    p5Instance.vertex(typeX/2,11/28*typeY);
+    p5Instance.bezierVertex(24/28*typeX,11/28*typeY, typeX,15/28*typeY, typeX,19/28*typeY);
+    p5Instance.vertex(typeX,3/4*typeY);
+    p5Instance.bezierVertex(typeX,24/28*typeY, 24/28*typeX,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(4/28*typeX,typeY, 0,24/28*typeY, 0,3/4*typeY);
+  p5Instance.endShape();
+}`,
+      six: `function six () {
+  p5Instance.beginShape();
+    p5Instance.vertex(1/2*typeX,0);
+    p5Instance.quadraticVertex(0,1/4*typeY, 0,3/4*typeY);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/2,12/28*typeY);
+    p5Instance.bezierVertex(24/28*typeX,12/28*typeY, typeX,16/28*typeY, typeX,20/28*typeY);
+    p5Instance.vertex(typeX,3/4*typeY);
+    p5Instance.bezierVertex(typeX,24/28*typeY, 24/28*typeX,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(4/28*typeX,typeY, 0,24/28*typeY, 0,3/4*typeY);
+    p5Instance.vertex(0,20/28*typeY);
+    p5Instance.bezierVertex(0,16/28*typeY, 4/28*typeX,12/28*typeY, typeX/2,12/28*typeY);
+  p5Instance.endShape();
+}`,
+      seven: `function seven () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,0);
+    p5Instance.vertex(typeX,0);
+    p5Instance.vertex(typeX/2,typeY-SA);
+    p5Instance.vertex(typeX/2,typeY);
+  p5Instance.endShape();
+}`,
+      eight: `function eight () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/2,0);
+    p5Instance.bezierVertex(23*typeX/28,0, 27*typeX/28,3*typeY/28, 27*typeX/28,6*typeY/28);
+    p5Instance.vertex(27*typeX/28,typeY/4);
+    p5Instance.bezierVertex(27*typeX/28,10*typeY/28, 23*typeX/28,13*typeY/28, typeX/2,13*typeY/28);
+    p5Instance.bezierVertex(5*typeX/28,13*typeY/28, typeX/28,10*typeY/28, typeX/28,typeY/4);
+    p5Instance.vertex(typeX/28,6*typeY/28);
+    p5Instance.bezierVertex(typeX/28,3*typeY/28, 5*typeX/28,0, typeX/2,0);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/2,13/28*typeY);
+    p5Instance.bezierVertex(24/28*typeX,13/28*typeY, typeX,16/28*typeY, typeX,20/28*typeY);
+    p5Instance.vertex(typeX,3/4*typeY);
+    p5Instance.bezierVertex(typeX,24/28*typeY, 24/28*typeX,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(4/28*typeX,typeY, 0,24/28*typeY, 0,3/4*typeY);
+    p5Instance.vertex(0,20/28*typeY);
+    p5Instance.bezierVertex(0,16/28*typeY, 4/28*typeX,13/28*typeY, typeX/2,13/28*typeY);
+  p5Instance.endShape();
+}`,
+      nine: `function nine () {
+  p5Instance.push();
+  p5Instance.translate(typeX,typeY);
+  p5Instance.rotate(p5Instance.PI);
+  p5Instance.beginShape();
+    p5Instance.vertex(1/2*typeX,0);
+    p5Instance.quadraticVertex(0,1/4*typeY, 0,3/4*typeY);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/2,12/28*typeY);
+    p5Instance.bezierVertex(24/28*typeX,12/28*typeY, typeX,16/28*typeY, typeX,20/28*typeY);
+    p5Instance.vertex(typeX,3/4*typeY);
+    p5Instance.bezierVertex(typeX,24/28*typeY, 24/28*typeX,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(4/28*typeX,typeY, 0,24/28*typeY, 0,3/4*typeY);
+    p5Instance.vertex(0,20/28*typeY);
+    p5Instance.bezierVertex(0,16/28*typeY, 4/28*typeX,12/28*typeY, typeX/2,12/28*typeY);
+  p5Instance.endShape();
+  p5Instance.pop();
+}`,
+      zero: `function zero () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX, typeY/3);
+    p5Instance.vertex(typeX,2*typeY/3);
+    p5Instance.bezierVertex(typeX,5*typeY/6, 5*typeX/6,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/6,typeY, 0,5*typeY/6, 0,2*typeY/3);
+    p5Instance.vertex(0,typeY/3);
+    p5Instance.bezierVertex(0,typeY/6, typeX/6,0, typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,0, typeX,typeY/6, typeX,typeY/3);
+  p5Instance.endShape();
+  p5Instance.line(2*typeX/3,typeY/3,typeX/3,2*typeY/3);
+}`,
+      // punctuation
+      letter_underscore: `function letter_underscore () { p5Instance.line(0, typeY, typeX, typeY); }`,
+      letter_dash: `function letter_dash () { p5Instance.line(0, typeY/2, typeX, typeY/2); }`,
+      letter_question: `function letter_question () {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,typeY/4);
+    p5Instance.bezierVertex(0,typeY/8,typeX/6,0, typeX/2,0);
+    p5Instance.bezierVertex(5*typeX/6,0, typeX,typeY/8, typeX,typeY/4);
+    p5Instance.bezierVertex(typeX,typeY/2, typeX/2, 12/28*typeY, typeX/2,3/4*typeY);
+  p5Instance.endShape();
+  p5Instance.line(typeX/2, 7*typeY/8, typeX/2, typeY);
+}`,
+      letter_period: `function letter_period () { p5Instance.line(typeX/2, 7*typeY/8, typeX/2, typeY); }`,
+      letter_colon: `function letter_colon () {
+  p5Instance.line(typeX/2, typeY/2-typeY/8, typeX/2, typeY/2);
+  p5Instance.line(typeX/2, 7*typeY/8, typeX/2, typeY);
+}`,
+      letter_semicolon: `function letter_semicolon () {
+  p5Instance.line(typeX/2, typeY/2-typeY/8, typeX/2, typeY/2);
+  p5Instance.line(typeX/2, 7*typeY/8, typeX/2 - typeX/4, typeY);
+}`,
+      letter_comma: `function letter_comma () { p5Instance.line(typeX/2, 7*typeY/8, typeX/2 - typeX/4, typeY); }`,
+      letter_exclaim: `function letter_exclaim () {
+  p5Instance.line(typeX/2, 0, typeX/2, 3*typeY/4);
+  p5Instance.line(typeX/2, 7*typeY/8, typeX/2, typeY);
+}`,
+      letter_slash: `function letter_slash () { p5Instance.line(0, typeY, typeX, 0); }`,
+      double_quote: `function double_quote () {
+  if(doubleQuoteSwitch == 1){
+    p5Instance.beginShape();
+      p5Instance.vertex(typeX/3-SA/2,typeY/4);
+      p5Instance.vertex(typeX/3-SA/2,5*typeY/28);
+      p5Instance.vertex(typeX/3-SA/2,5*typeY/28+SA/2);
+      p5Instance.vertex(typeX/2-SA/2,SA);
+    p5Instance.endShape();
+    p5Instance.beginShape();
+      p5Instance.vertex(typeX/2+SA/2,typeY/4);
+      p5Instance.vertex(typeX/2+SA/2,5*typeY/28);
+      p5Instance.vertex(typeX/2+SA/2,5*typeY/28+SA/2);
+      p5Instance.vertex(typeX*2/3+SA/2,SA);
+    p5Instance.endShape();
+  } else {
+    p5Instance.beginShape();
+      p5Instance.vertex(typeX/3-SA/2,typeY/4);
+      p5Instance.vertex(typeX/2-SA/2,typeY*2/28-SA/2);
+      p5Instance.vertex(typeX/2-SA/2,typeY*2/28);
+      p5Instance.vertex(typeX/2-SA/2,0);
+    p5Instance.endShape();
+    p5Instance.beginShape();
+      p5Instance.vertex(typeX/2+SA/2,typeY/4);
+      p5Instance.vertex(typeX*2/3+SA/2,typeY*2/28-SA/2);
+      p5Instance.vertex(typeX*2/3+SA/2,typeY*2/28);
+      p5Instance.vertex(typeX*2/3+SA/2,0);
+    p5Instance.endShape();
+  }
+  doubleQuoteSwitch *= -1;
+}`,
+      single_quote: `function single_quote () {
+  if(singleQuoteSwitch == 1){
+    p5Instance.beginShape();
+      p5Instance.vertex(typeX*3/8-SA/2,typeY/4);
+      p5Instance.vertex(typeX*3/8-SA/2,5*typeY/28);
+      p5Instance.vertex(typeX*3/8-SA/2,5*typeY/28+SA/2);
+      p5Instance.vertex(typeX*5/8-SA/2,SA);
+    p5Instance.endShape();
+  } else {
+    p5Instance.beginShape();
+      p5Instance.vertex(typeX*3/8-SA/2,typeY/4);
+      p5Instance.vertex(typeX*5/8-SA/2,typeY*2/28-SA/2);
+      p5Instance.vertex(typeX*5/8-SA/2,typeY*2/28);
+      p5Instance.vertex(typeX*5/8-SA/2,0);
+    p5Instance.endShape();
+  }
+  singleQuoteSwitch *= -1;
+}`,
+      hash: `function hash () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/8,typeY);
+    p5Instance.vertex(typeX/8,typeY-SA);
+    p5Instance.vertex(typeX/2,SA);
+    p5Instance.vertex(typeX/2,0);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/2,typeY);
+    p5Instance.vertex(typeX/2,typeY-SA);
+    p5Instance.vertex(typeX*7/8,SA);
+    p5Instance.vertex(typeX*7/8,0);
+  p5Instance.endShape();
+  p5Instance.line(typeX*2/28,typeY/3, typeX,typeY/3);
+  p5Instance.line(0,typeY*2/3, 26/28*typeX,typeY*2/3);
+}`,
+      cash: `function cash() {
+  p5Instance.beginShape();
+    p5Instance.vertex(27*typeX/28,typeY/4);
+    p5Instance.vertex(27*typeX/28,13*typeY/56);
+    p5Instance.bezierVertex(27*typeX/28,4*typeY/28, 7*typeX/8,0, typeX/2,0);
+    p5Instance.bezierVertex(typeX/4,0, typeX/28,2*typeY/28, typeX/28,11*typeY/56);
+    p5Instance.vertex(typeX/28,6*typeY/28);
+    p5Instance.bezierVertex(typeX/28,17*typeY/56, typeX/8,21*typeY/56, typeX/3,12*typeY/28);
+    p5Instance.vertex(20*typeX/28,29*typeY/56);
+    p5Instance.bezierVertex(26*typeX/28,16*typeY/28, typeX,18*typeY/28, typeX,41*typeY/56);
+    p5Instance.vertex(typeX,3*typeY/4);
+    p5Instance.bezierVertex(typeX,26*typeY/28, 22*typeX/28,typeY, typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/4,typeY, 0,53*typeY/56, 0,3*typeY/4);
+    p5Instance.vertex(0,41*typeY/56);
+  p5Instance.endShape();
+  p5Instance.line(typeX/2,-typeY/16,typeX/2,typeY*17/16);
+}`,
+      letter_amp: `function letter_amp () {
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX,typeY);
+    p5Instance.vertex(typeX,typeY-SA);
+    p5Instance.quadraticVertex(typeX/8,typeY*11/28, typeX/8,typeY*6/28);
+    p5Instance.bezierVertex(typeX/8,typeY/8, typeX/4,0, 12/28*typeX,0);
+    p5Instance.bezierVertex(5*typeX/8,0, typeX*2/3,typeY/8, typeX*2/3,typeY*5/28);
+    p5Instance.bezierVertex(typeX*2/3,typeY*11/28, 0,typeY/2, 0,3*typeY/4);
+    p5Instance.bezierVertex(0,typeY, typeX/4,typeY, typeX*3/8,typeY);
+    p5Instance.bezierVertex(typeX*5/8,typeY, typeX,typeY, typeX,typeY/2);
+    p5Instance.vertex(typeX,typeY/2);
+    p5Instance.vertex(typeX*3/4,typeY/2);
+  p5Instance.endShape();
+}`,
+      percentage: `function percentage() {
+  p5Instance.beginShape();
+    p5Instance.vertex(0,typeY);
+    p5Instance.vertex(0,typeY-SA);
+    p5Instance.vertex(typeX,SA);
+    p5Instance.vertex(typeX,0);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX/4,0);
+    p5Instance.bezierVertex(typeX*3/8,0, typeX/2,typeY/12, typeX/2,typeY/6);
+    p5Instance.bezierVertex(typeX/2,3/12*typeY, typeX*3/8,typeY/3, typeX/4,typeY/3);
+    p5Instance.bezierVertex(typeX/8,typeY/3, 0,3/12*typeY, 0,typeY/6);
+    p5Instance.bezierVertex(0,typeY/12, typeX/8,0, typeX/4,0);
+  p5Instance.endShape();
+  p5Instance.push();
+    p5Instance.translate(typeX,typeY);
+    p5Instance.rotate(p5Instance.PI);
+    p5Instance.beginShape();
+      p5Instance.vertex(typeX/4,0);
+      p5Instance.bezierVertex(typeX*3/8,0, typeX/2,typeY/12, typeX/2,typeY/6);
+      p5Instance.bezierVertex(typeX/2,3/12*typeY, typeX*3/8,typeY/3, typeX/4,typeY/3);
+      p5Instance.bezierVertex(typeX/8,typeY/3, 0,3/12*typeY, 0,typeY/6);
+      p5Instance.bezierVertex(0,typeY/12, typeX/8,0, typeX/4,0);
+    p5Instance.endShape();
+  p5Instance.pop();
+}`,
+      equal: `function equal() { p5Instance.line(0,typeY*3/8, typeX,typeY*3/8); p5Instance.line(0,typeY*5/8, typeX,typeY*5/8); }`,
+      plus: `function plus() { p5Instance.line(0,typeY/2, typeX,typeY/2); p5Instance.line(typeX/2,typeY/4, typeX/2,typeY*3/4); }`,
+      asterisk: `function asterisk() {
+  p5Instance.push();
+  p5Instance.translate(typeX/2,typeY/2);
+  p5Instance.rotate(p5Instance.float(p5Instance.frameCount)*0.05);
+  for (var i=0;i<5;i++){
+    p5Instance.rotate(2*p5Instance.PI/5);
+    p5Instance.line(0,0,0,typeY/6);
+  }
+  p5Instance.pop();
+}`,
+      at: `function at() {
+  p5Instance.beginShape();
+    p5Instance.vertex(17/28*typeX,typeY);
+    p5Instance.vertex(typeX/2,typeY);
+    p5Instance.bezierVertex(typeX/6,typeY, 0,5*typeY/6, 0,2*typeY/3);
+    p5Instance.vertex(0,12/28*typeY);
+    p5Instance.bezierVertex(0,typeY/4, typeX/6,2/28*typeY, typeX/2,2/28*typeY);
+    p5Instance.bezierVertex(5*typeX/6,2/28*typeY, typeX,typeY/4, typeX,12/28*typeY);
+    p5Instance.vertex(typeX,23/28*typeY);
+  p5Instance.endShape();
+  p5Instance.beginShape();
+    p5Instance.vertex(typeX,17/28*typeY);
+    p5Instance.bezierVertex(typeX,21/28*typeY, 3/4*typeX,24/28*typeY, 16/28*typeX,24/28*typeY);
+    p5Instance.bezierVertex(11/28*typeX,24/28*typeY, 8/28*typeX,3/4*typeY, 8/28*typeX,17/28*typeY);
+    p5Instance.bezierVertex(8/28*typeX,13/28*typeY, 11/28*typeX,10/28*typeY, 16/28*typeX,10/28*typeY);
+    p5Instance.bezierVertex(3/4*typeX,10/28*typeY, typeX,13/28*typeY, typeX,17/28*typeY);
+  p5Instance.endShape();
+}`,
+      letter_space: `function letter_space () { }`
+    };
+
+    const editorContainer = document.getElementById('function-editors-container');
+
+    function createEditorBlock(funcName, funcCode) {
+      const block = document.createElement('div');
+      block.className = 'border border-gray-700 p-3 rounded-lg bg-gray-800';
+
+      let previewChar;
+      if (funcName.startsWith('letter_')) {
+        previewChar = funcName
+          .replace('letter_', '')
+          .replace('amp','&').replace('underscore','_').replace('dash','-')
+          .replace('question','?').replace('period','.')
+          .replace('exclaim','!').replace('colon',':').replace('semicolon',';')
+          .replace('comma',',').replace('slash','/').replace('space',' ')
+          .toUpperCase();
+      } else if (['one','two','three','four','five','six','seven','eight','nine','zero'].includes(funcName)) {
+        previewChar = ({ one:'1', two:'2', three:'3', four:'4', five:'5', six:'6', seven:'7', eight:'8', nine:'9', zero:'0' })[funcName];
+      } else if (funcName === 'double_quote') previewChar = '"';
+      else if (funcName === 'single_quote') previewChar = "'";
+      else if (funcName === 'hash') previewChar = '#';
+      else if (funcName === 'cash') previewChar = '$';
+      else if (funcName === 'percentage') previewChar = '%';
+      else if (funcName === 'equal') previewChar = '=';
+      else if (funcName === 'plus') previewChar = '+';
+      else if (funcName === 'asterisk') previewChar = '*';
+      else if (funcName === 'at') previewChar = '@';
+      else previewChar = '';
+
+      block.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold text-lg text-indigo-400">${funcName} <span class="text-gray-500 text-sm">(${previewChar})</span></h3>
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-gray-400"><input type="radio" name="selected-editor" value="${funcName}" class="mr-1"> select</label>
+            <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded transition-colors" onclick="previewLetter(${JSON.stringify(previewChar)})">Preview</button>
+          </div>
+        </div>
+        <textarea id="editor-${funcName}" class="code-block w-full rounded p-2 text-sm resize-none" oninput="updateFunctionStore('${funcName}')">${funcCode.trim()}</textarea>
+      `;
+      editorContainer.appendChild(block);
+    }
+
+    function initializeEditors() {
+      editorContainer.innerHTML = '';
+      const sortedKeys = Object.keys(letterFunctions).sort((a, b) => {
+        const isLetter = key => key.startsWith('letter_');
+        const isNumber = key => ['one','two','three','four','five','six','seven','eight','nine','zero'].includes(key);
+        const isEngine = key => key === 'keyboardEngine';
+        if (isEngine(a)) return -1;
+        if (isEngine(b)) return 1;
+        if (isLetter(a) && !isLetter(b)) return -1;
+        if (!isLetter(a) && isLetter(b)) return 1;
+        if (isNumber(a) && !isNumber(b)) return -1;
+        if (!isNumber(a) && isNumber(b)) return 1;
+        return a.localeCompare(b);
+      });
+      const engineKey = 'keyboardEngine';
+      const engineIndex = sortedKeys.indexOf(engineKey);
+      if (engineIndex > -1) { sortedKeys.splice(engineIndex,1); sortedKeys.unshift(engineKey); }
+      sortedKeys.forEach(name => createEditorBlock(name, letterFunctions[name]));
+    }
+
+    function updateFunctionStore(funcName) {
+      const editor = document.getElementById(`editor-${funcName}`);
+      letterFunctions[funcName] = editor.value;
+    }
+
+    // Globalizer: turn "function name(" into "window.name = function name(" and indirect-eval in global scope
+    function loadFontEngine() {
+      let code = '';
+      for (const [, funcCode] of Object.entries(letterFunctions)) {
+        code += funcCode + '\n';
+      }
+      const globalized = code.replace(
+        /(^|\s)function\s+([A-Za-z_$][\w$]*)\s*\(/g,
+        (m, pre, name) => `${pre}window.${name} = function ${name}(`
+      );
+      try {
+        (0, eval)(globalized); // indirect eval => global scope
+        if (typeof window.keyboardEngine !== 'function') {
+          throw new Error('keyboardEngine was not defined. Check your editor code for syntax errors.');
+        }
+      } catch (e) {
+        console.error('Error in font functions:', e);
+        alert("There's an error in your font function code. Check the console for details.");
+      }
+    }
+
+    // Preview exactly one character by updating the text field and reloading engine
+    window.previewLetter = function(previewChar) {
+      if (previewChar === '') return;
+      const tf = document.getElementById('textfield');
+      tf.value = previewChar.length > 1 ? previewChar : previewChar.toUpperCase();
+      loadFontEngine(); // the next draw will use the new function
+    };
+
+    // ---------- p5 Sketch ----------
+    const sketch = (p) => {
+      // Globals scoped to the sketch closure
+      var typeX, typeY, typeStroke, tracking, lineSpace, yBlock, yField, typeYfigure, rows, SA;
+      var waveLength, waveSpeed, slope;
+      var letter_select, inp, inpText, doubleQuoteSwitch = 1, singleQuoteSwitch = 1;
+      var bkgdColor = 0, inp1, inp2, inp3, inp4, inp5, inpNumber = 2;
+      var gifLength = 157, gifStart, gifEnd, gifRecord = false, canvas, pdSave;
+      var capturer;
+
+      let typeXSlider, typeStrokeSlider, trackingSlider, lineSpaceSlider, rowSlider, mirrorCheck;
+      let waveLengthSlider, waveSpeedSlider, slopeSlider;
+      let saveLoopSet, prideButton;
+      let gradientCheck, inp0check;
+      let inp1check, inp2check, inp3check, inp4check, inp5check;
+      let bkgdColorPicker;
+
+      // Bridge: expose live frame variables to global engine functions (which are eval'd on window)
+      function bridgeEngineContext() {
+        window.p5Instance = p;
+        window.inpText = inpText;
+        window.typeX = typeX;
+        window.typeY = typeY;
+        window.typeStroke = typeStroke;
+        window.SA = SA;
+        window.doubleQuoteSwitch = doubleQuoteSwitch;
+        window.singleQuoteSwitch = singleQuoteSwitch;
+      }
+
+      p.setup = () => {
+        const container = document.getElementById('sketch-container');
+        const p5SaveCanvas = p.createCanvas(container.offsetWidth, container.offsetHeight);
+        canvas = p5SaveCanvas.canvas;
+        p.background(bkgdColor);
+        p.smooth();
+
+        capturer = new CCapture({ framerate: 60, format: 'gif', workersPath: 'js/', verbose: true });
+
+        inp = p.select("#textfield");
+        const controlsContainer = p.select('#controls-container');
+
+        typeXSlider = p.createSlider(0, 100, 20).parent(controlsContainer);
+        typeStrokeSlider = p.createSlider(0, 5, 2, 0.5).parent(controlsContainer);
+        trackingSlider = p.createSlider(0, 100, 10).parent(controlsContainer);
+        lineSpaceSlider = p.createSlider(0, 100, 20).parent(controlsContainer);
+        rowSlider = p.createSlider(0, 100, 14, 2).parent(controlsContainer);
+        mirrorCheck = p.createCheckbox(' Mirror', false).parent(controlsContainer);
+        waveLengthSlider = p.createSlider(0, 1, 0.13, 0.01).parent(controlsContainer);
+        waveSpeedSlider = p.createSlider(0, 10, 1).parent(controlsContainer);
+        slopeSlider = p.createSlider(0, p.PI, 1, 0.1).parent(controlsContainer);
+
+        saveLoopSet = p.createButton('Save Loop').parent(controlsContainer).mousePressed(saveLoop);
+        prideButton = p.createButton('PRIDE!').parent(controlsContainer).mousePressed(pride);
+
+        gradientCheck = p.createCheckbox(' Gradient', false).parent(controlsContainer);
+        inp0check = p.createCheckbox(' No Stripes', false).parent(controlsContainer);
+
+        inp1 = p.createColorPicker('#000000').parent(controlsContainer);
+        inp1check = p.createCheckbox(' 1', true).parent(controlsContainer).changed(inp1checker);
+
+        inp2 = p.createColorPicker('#ffffff').parent(controlsContainer);
+        inp2check = p.createCheckbox(' 2', false).parent(controlsContainer).changed(inp2checker);
+
+        inp3 = p.createColorPicker('#ff0000').parent(controlsContainer);
+        inp3check = p.createCheckbox(' 3', false).parent(controlsContainer).changed(inp3checker);
+
+        inp4 = p.createColorPicker('#ffff00').parent(controlsContainer);
+        inp4check = p.createCheckbox(' 4', false).parent(controlsContainer).changed(inp4checker);
+
+        inp5 = p.createColorPicker('#0000ff').parent(controlsContainer);
+        inp5check = p.createCheckbox(' 5', false).parent(controlsContainer).changed(inp5checker);
+
+        p.createDiv('BKGD').parent(controlsContainer);
+        bkgdColorPicker = p.createColorPicker('#FFFFFF').parent(controlsContainer);
+
+        document.getElementById('update-all-button').addEventListener('click', runSketch);
+        document.getElementById('preview-selected').addEventListener('click', () => {
+          const selected = document.querySelector('input[name="selected-editor"]:checked');
+          if (!selected) return;
+          const name = selected.value;
+          // Compute preview char the same way as createEditorBlock:
+          let ch = '';
+          if (name.startsWith('letter_')) {
+            ch = name.replace('letter_','').replace('amp','&').replace('underscore','_').replace('dash','-')
+                     .replace('question','?').replace('period','.').replace('exclaim','!')
+                     .replace('colon',':').replace('semicolon',';').replace('comma',',')
+                     .replace('slash','/').replace('space',' ').toUpperCase();
+          } else if (['one','two','three','four','five','six','seven','eight','nine','zero'].includes(name)) {
+            ch = ({ one:'1', two:'2', three:'3', four:'4', five:'5', six:'6', seven:'7', eight:'8', nine:'9', zero:'0' })[name];
+          } else if (name === 'double_quote') ch = '"';
+          else if (name === 'single_quote') ch = "'";
+          else if (name === 'hash') ch = '#';
+          else if (name === 'cash') ch = '$';
+          else if (name === 'percentage') ch = '%';
+          else if (name === 'equal') ch = '=';
+          else if (name === 'plus') ch = '+';
+          else if (name === 'asterisk') ch = '*';
+          else if (name === 'at') ch = '@';
+          window.previewLetter(ch);
+        });
+
+        const containerRect = container.getBoundingClientRect();
+        yField = containerRect.height - 50;
+        pdSave = p.pixelDensity();
+      };
+
+      p.draw = () => {
+        if(gifRecord == true){ p.pixelDensity(1); } else { p.pixelDensity(pdSave); }
+
+        bkgdColor = bkgdColorPicker.value();
+        p.background(bkgdColor);
+
+        p.noFill();
+        p.strokeWeight(1); p.strokeJoin(p.ROUND);
+        p.stroke(50,200,250);
+
+        inpText = String(inp.value());
+        let runLength = inpText.length;
+
+        typeX = typeXSlider.value();
+        typeStroke = typeStrokeSlider.value();
+        tracking = trackingSlider.value();
+        lineSpace = lineSpaceSlider.value();
+        rows = rowSlider.value();
+
+        waveLength = waveLengthSlider.value();
+        waveSpeed = waveSpeedSlider.value()/100;
+        slope = slopeSlider.value();
+
+        SA = typeStroke/2;
+        // Reset quote toggles each frame; letter functions may flip them
+        doubleQuoteSwitch = 1;
+        singleQuoteSwitch = 1;
+
+        let step = (p.sq(rows)+rows)/2;
+        yBlock = mirrorCheck.checked() ? ( (yField)/(step*2) ) : ( yField/step );
+        let waveBlock = 2*p.PI/rows;
+
+        p.push();
+        p.translate(p.width / 2, p.height / 2);
+        p.translate(-(runLength*typeX + tracking*(runLength-1))/2,-yField/2);
+
+        // Main block
+        for(let k = 0; k < runLength; k++){
+          p.push();
+          for(let i = 0; i < rows; i++){
+            let ribbonColor, strkColor;
+            if(gradientCheck.checked()){
+              const colors = setGradient(i);
+              ribbonColor = colors.ribbonColor;
+              strkColor = colors.strkColor;
+            } else if(!inp0check.checked()){
+              ribbonColor = setRibbonColor(i);
+              strkColor = setTextColor(i);
+            } else {
+              strkColor = setTextOnlyColor(i);
+            }
+
+            letter_select = k;
+
+            if(waveSpeed>0){
+              typeYfigure = p.map(sinEngine(i,waveBlock,k,waveLength,waveSpeed,slope),-1,1,yBlock,rows*yBlock);
+            } else {
+              typeYfigure = (rows-i)*yBlock;
+            }
+            typeY = typeYfigure - typeYfigure*(lineSpaceSlider.value()/100);
+            lineSpace = typeYfigure*(lineSpaceSlider.value()/100);
+
+            p.push();
+              p.translate(typeX*k + tracking*k,0);
+              if(!inp0check.checked()){
+                p.fill(ribbonColor); p.noStroke();
+                p.rect(-tracking/2,0,typeX+tracking,typeYfigure);
+              }
+              p.translate(0,lineSpace/2);
+              p.stroke(strkColor); p.strokeWeight(typeStroke); p.noFill();
+
+              // Bridge locals to global engine; call engine; sync back switches
+              bridgeEngineContext();
+              window.letter_select = k;
+              keyboardEngine();
+              doubleQuoteSwitch = window.doubleQuoteSwitch;
+              singleQuoteSwitch  = window.singleQuoteSwitch;
+
+            p.pop();
+            p.translate(0,typeYfigure);
+          }
+          p.pop();
+        }
+
+        // Mirror block
+        if(mirrorCheck.checked()){
+          p.push();
+          p.translate(0,yField/2);
+          for(let m = 0; m < runLength; m++){
+            p.push();
+            for(let n = 1; n < rows+1; n++){
+              let ribbonColor, strkColor;
+              if(gradientCheck.checked()){
+                const colors = setGradient(rows-n);
+                ribbonColor = colors.ribbonColor;
+                strkColor = colors.strkColor;
+              } else if(!inp0check.checked()){
+                ribbonColor = setRibbonColor(rows-n);
+                strkColor = setTextColor(rows-n);
+              } else {
+                strkColor = setTextOnlyColor(rows-n);
+              }
+
+              letter_select = m;
+
+              if(waveSpeed>0){
+                typeYfigure = p.map(sinEngine(rows-n,waveBlock,m,waveLength,waveSpeed,slope),-1,1,yBlock,rows*yBlock);
+              } else {
+                typeYfigure = n*yBlock;
+              }
+              typeY = typeYfigure - typeYfigure*(lineSpaceSlider.value()/100);
+              lineSpace = typeYfigure*(lineSpaceSlider.value()/100);
+
+              p.push();
+                p.translate(typeX*m + tracking*m,0);
+                if(!inp0check.checked()){
+                  p.fill(ribbonColor); p.noStroke();
+                  p.rect(-tracking/2,0,typeX+tracking,typeYfigure);
+                }
+                p.translate(0,lineSpace/2);
+                p.stroke(strkColor); p.strokeWeight(typeStroke); p.noFill();
+
+                bridgeEngineContext();
+                window.letter_select = m;
+                keyboardEngine();
+                doubleQuoteSwitch = window.doubleQuoteSwitch;
+                singleQuoteSwitch  = window.singleQuoteSwitch;
+
+              p.pop();
+              p.translate(0,typeYfigure);
+            }
+            p.pop();
+          }
+          p.pop();
+        }
+        p.pop();
+
+        // GIF capture (optional)
+        if(gifRecord){
+          if (p.frameCount === gifStart) capturer.start();
+          capturer.capture(canvas);
+          if (p.frameCount >= gifEnd) {
+            capturer.stop(); capturer.save();
+            gifRecord = false; p.pixelDensity(pdSave);
+          }
+        }
+      };
+
+      // Helpers
+      function sinEngine(aCount,aLength, bCount,bLength, Speed, slopeN) {
+        var sinus = p.sin((-p.frameCount*Speed + aCount*aLength + bCount*bLength));
+        var sign = (sinus >= 0 ? 1: -1);
+        var sinerSquare = sign * (1-p.pow(1-p.abs(sinus),slopeN));
+        return sinerSquare;
+      }
+      function inp1checker() { inp2check.checked(false); inp3check.checked(false); inp4check.checked(false); inp5check.checked(false); inpNumber = 1; }
+      function inp2checker() { inp1check.checked(true); inp3check.checked(false); inp4check.checked(false); inp5check.checked(false); inpNumber = inp2check.checked()?2:1; }
+      function inp3checker() { inp1check.checked(true); inp2check.checked(true); inp4check.checked(false); inp5check.checked(false); inpNumber = inp3check.checked()?3:2; }
+      function inp4checker() { inp1check.checked(true); inp2check.checked(true); inp3check.checked(true); inp5check.checked(false); inpNumber = inp4check.checked()?4:3; }
+      function inp5checker() { inp1check.checked(true); inp2check.checked(true); inp3check.checked(true); inp4check.checked(true); inpNumber = inp5check.checked()?5:4; }
+      function setRibbonColor(switcher) {
+        if (inpNumber == 5) {
+          if (switcher % 5 == 0) return inp1.value(); if (switcher % 5 == 1) return inp2.value(); if (switcher % 5 == 2) return inp3.value(); if (switcher % 5 == 3) return inp4.value(); if (switcher % 5 == 4) return inp5.value();
+        } else if (inpNumber == 4) {
+          if (switcher % 4 == 0) return inp1.value(); if (switcher % 4 == 1) return inp2.value(); if (switcher % 4 == 2) return inp3.value(); if (switcher % 4 == 3) return inp4.value();
+        } else if (inpNumber == 3) {
+          if (switcher % 3 == 0) return inp1.value(); if (switcher % 3 == 1) return inp2.value(); if (switcher % 3 == 2) return inp3.value();
+        } else if (inpNumber == 2) {
+          if (switcher % 2 == 0) return inp1.value(); if (switcher % 2 == 1) return inp2.value();
+        } else {
+          return inp1.value();
+        }
+      }
+      function setTextColor(switcher) {
+        if (inpNumber == 5) {
+          if (switcher % 5 == 0) return inp5.value(); if (switcher % 5 == 1) return inp1.value(); if (switcher % 5 == 2) return inp2.value(); if (switcher % 5 == 3) return inp3.value(); if (switcher % 5 == 4) return inp4.value();
+        } else if (inpNumber == 4) {
+          if (switcher % 4 == 0) return inp4.value(); if (switcher % 4 == 1) return inp1.value(); if (switcher % 4 == 2) return inp2.value(); if (switcher % 4 == 3) return inp3.value();
+        } else if (inpNumber == 3) {
+          if (switcher % 3 == 0) return inp3.value(); if (switcher % 3 == 1) return inp1.value(); if (switcher % 3 == 2) return inp2.value();
+        } else if (inpNumber == 2) {
+          if (switcher % 2 == 0) return inp2.value(); if (switcher % 2 == 1) return inp1.value();
+        } else {
+          return bkgdColor;
+        }
+      }
+      function setTextOnlyColor(switcher) {
+        if (inpNumber >= 5) {
+          if (switcher % 5 == 0) return inp1.value(); if (switcher % 5 == 1) return inp2.value(); if (switcher % 5 == 2) return inp3.value(); if (switcher % 5 == 3) return inp4.value(); if (switcher % 5 == 4) return inp5.value();
+        } else if (inpNumber == 4) {
+          if (switcher % 4 == 0) return inp1.value(); if (switcher % 4 == 1) return inp2.value(); if (switcher % 4 == 2) return inp3.value(); if (switcher % 4 == 3) return inp4.value();
+        } else if (inpNumber == 3) {
+          if (switcher % 3 == 0) return inp1.value(); if (switcher % 3 == 1) return inp2.value(); if (switcher % 3 == 2) return inp3.value();
+        } else if (inpNumber == 2) {
+          if (switcher % 2 == 0) return inp1.value(); if (switcher % 2 == 1) return inp2.value();
+        } else {
+          return inp1.value();
+        }
+      }
+      function setGradient(switcher) {
+        let ribbonColor, strkColor;
+        if (inpNumber >= 5) {
+          let from = p.color(inp1.value()), mid = p.color(inp2.value()), mid2 = p.color(inp3.value()), mid3 = p.color(inp4.value()), to = p.color(inp5.value());
+          if(switcher <= (rows/4)) { ribbonColor = p.lerpColor(from,mid,switcher/(rows/4)); strkColor = from; }
+          else if (switcher <= (rows/2)) { ribbonColor = p.lerpColor(mid,mid2,(switcher-rows/4)/(rows/4)); strkColor = mid; }
+          else if (switcher <= (3*rows/4)) { ribbonColor = p.lerpColor(mid2,mid3,(switcher-rows/2)/(rows/4)); strkColor = mid2; }
+          else { ribbonColor = p.lerpColor(mid3,to,(switcher-3*rows/4)/(rows/4)); strkColor = mid3; }
+        } else if (inpNumber == 4) {
+          let from = p.color(inp1.value()), mid = p.color(inp2.value()), mid2 = p.color(inp3.value()), to = p.color(inp4.value());
+          if(switcher <= (rows/3)) { ribbonColor = p.lerpColor(from,mid,switcher/(rows/3)); strkColor = from; }
+          else if (switcher <= (2*rows/3)) { ribbonColor = p.lerpColor(mid,mid2,(switcher-rows/3)/(rows/3)); strkColor = mid; }
+          else { ribbonColor = p.lerpColor(mid2,to,(switcher-2*rows/3)/(rows/3)); strkColor = mid2; }
+        } else if (inpNumber == 3) {
+          let from = p.color(inp1.value()), mid = p.color(inp2.value()), to = p.color(inp3.value());
+          if(switcher <= (rows/2)) { ribbonColor = p.lerpColor(from,mid,switcher/(rows/2)); strkColor = from; }
+          else { ribbonColor = p.lerpColor(mid,to,(switcher-rows/2)/(rows/2)); strkColor = mid; }
+        } else if (inpNumber == 2) {
+          let from = p.color(inp1.value()), to = p.color(inp2.value());
+          ribbonColor = p.lerpColor(from,to,switcher/rows); strkColor = from;
+        } else if (inpNumber == 1) {
+          let from = p.color(inp1.value()), to = p.color(bkgdColorPicker.value());
+          ribbonColor = p.lerpColor(from,to,switcher/rows); strkColor = to;
+        }
+        return { ribbonColor, strkColor };
+      }
+      function pride() {
+        inpNumber = 6;
+        inp1.value('#e70000'); inp2.value('#ff8c00'); inp3.value('#ffef00'); inp4.value('#00811f'); inp5.value('#0044ff'); inp6 = p.color('#760089');
+        inp1check.checked(true); inp2check.checked(true); inp3check.checked(true); inp4check.checked(true); inp5check.checked(true);
+        bkgdColorPicker.value('#ffffff');
+      }
+      function saveLoop() {
+        if(confirm('Click OK to generate your gif.')){
+          waveSpeedSlider.value(4);
+          gifStart = p.frameCount;
+          gifEnd = gifStart + gifLength;
+          gifRecord = true;
+        } else {
+          gifRecord = false;
+        }
+      }
+      p.windowResized = () => {
+        const container = document.getElementById('sketch-container');
+        p.resizeCanvas(container.offsetWidth, container.offsetHeight);
+        yField = p.height - 50;
+      };
+    };
+
+    // Start up (after sketch exists)
+    function runSketch() {
+      loadFontEngine();
+      if (p5Instance) p5Instance.remove();
+      p5Instance = new p5(sketch, 'sketch-container');
+    }
+
+    // Initialize editors first time and run
+    initializeEditors();
+    runSketch();
+  </script>
+</body>
+</html>
